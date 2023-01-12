@@ -5,9 +5,11 @@ use std::{
         msg_sender,
     },
     call_frames::{
+        contract_id,
         msg_asset_id,
     },
     context::{
+        balance_of,
         msg_amount,
     },
     revert::require,
@@ -31,6 +33,8 @@ abi Moneybox {
 
     #[storage(read)]
     fn balance(address: Address, asset_id: ContractId) -> u64;
+
+    fn total_balance_of(asset_id: ContractId) -> u64;
 }
 
 fn get_msg_sender_address_or_panic() -> Address {
@@ -78,5 +82,9 @@ impl Moneybox for Contract {
     #[storage(read)]
     fn balance(address: Address, asset_id: ContractId) -> u64 {
         balance_internal(address, asset_id)
+    }
+
+    fn total_balance_of(asset_id: ContractId) -> u64 {
+        balance_of(contract_id(), asset_id)
     }
 }

@@ -1,5 +1,5 @@
 use fuels::{
-    prelude::CallParameters,
+    prelude::{Bech32ContractId, CallParameters},
     tx::{Address, AssetId, ContractId},
 };
 
@@ -25,7 +25,7 @@ async fn main_test() {
 
     let token_instance = get_token_contract_instance(&wallet, &usdc_config).await;
     let asset_id = AssetId::from(*token_instance.get_contract_id().hash());
-    let contract_asset_id = ContractId::from(token_instance.get_contract_id());
+    let contract_id = ContractId::from(token_instance.get_contract_id());
 
     print_balances(&wallet).await;
     let money_box = get_money_box_instance(&wallet).await;
@@ -44,10 +44,19 @@ async fn main_test() {
         .await
         .expect("❌ first deposit failed");
 
-    let balance = wallet_abi_calls::balance(&money_box, address, contract_asset_id)
+    let balance = wallet_abi_calls::balance(&money_box, address, contract_id)
         .await
         .unwrap();
     assert_eq!(balance.value, parse_units(100, usdc_config.decimals));
+    
+    let cotarcts = [Bech32ContractId::from(contract_id)];
+    let total_balance = methods
+        .total_balance_of(contract_id)
+        .set_contracts(&cotarcts)
+        .simulate()
+        .await
+        .unwrap();
+    println!("total_balance: {}", total_balance.value);
 
     let formatted_balance = format_units(balance.value, usdc_config.decimals);
     println!(
@@ -60,7 +69,7 @@ async fn main_test() {
     let withdraw_amount = parse_units(100, usdc_config.decimals);
     let call_params = CallParameters::new(Some(withdraw_amount), Some(asset_id), None);
     methods
-        .withdraw(contract_asset_id, withdraw_amount)
+        .withdraw(contract_id, withdraw_amount)
         .call_params(call_params)
         .estimate_tx_dependencies(None)
         .await
@@ -70,7 +79,7 @@ async fn main_test() {
         .expect("❌ first withdraw failed");
 
     let balance = methods
-        .balance(Address::from(wallet.address()), contract_asset_id)
+        .balance(Address::from(wallet.address()), contract_id)
         .simulate()
         .await
         .unwrap()
@@ -94,7 +103,7 @@ async fn main_test() {
         .expect("❌ second deposit failed");
 
     let balance = methods
-        .balance(Address::from(wallet.address()), contract_asset_id)
+        .balance(Address::from(wallet.address()), contract_id)
         .simulate()
         .await
         .unwrap()
@@ -118,7 +127,7 @@ async fn main_test() {
         .expect("❌ third deposit failed");
 
     let balance = methods
-        .balance(Address::from(wallet.address()), contract_asset_id)
+        .balance(Address::from(wallet.address()), contract_id)
         .simulate()
         .await
         .unwrap()
@@ -135,7 +144,7 @@ async fn main_test() {
     let withdraw_amount = parse_units(15, usdc_config.decimals);
     let call_params = CallParameters::new(Some(withdraw_amount), Some(asset_id), None);
     methods
-        .withdraw(contract_asset_id, withdraw_amount)
+        .withdraw(contract_id, withdraw_amount)
         .call_params(call_params)
         .estimate_tx_dependencies(None)
         .await
@@ -145,7 +154,7 @@ async fn main_test() {
         .expect("❌ first withdraw failed");
 
     let balance = methods
-        .balance(Address::from(wallet.address()), contract_asset_id)
+        .balance(Address::from(wallet.address()), contract_id)
         .simulate()
         .await
         .unwrap()
